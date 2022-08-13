@@ -89,5 +89,6 @@ const api = new apigateway.RestAPI('api', {
   }]
 })
 
+export const dbTable = table
 export const url = api.url
 
