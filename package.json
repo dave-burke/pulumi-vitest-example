@@ -2,7 +2,7 @@
     "name": "pulumi-vitest-example",
     "main": "index.ts",
     "scripts": {
-        "test": "vitest"
+        "test": "vitest run"
     },
     "devDependencies": {
         "@types/node": "^14",
