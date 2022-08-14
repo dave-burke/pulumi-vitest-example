@@ -48,4 +48,4 @@ const endpoint = new awsx.apigateway.API("hello-world", {
     }],
 });
 
-exports.endpoint = endpoint.url;
+export const endpointUrl = endpoint.url;

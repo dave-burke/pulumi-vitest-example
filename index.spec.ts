@@ -32,7 +32,13 @@ describe('infrastructure', () => {
   });
 
   it("doesn't break anything", (done) => {
-    done()
+    pulumi.all([infra.endpointUrl]).apply(([url]) => {
+      if(url != 'undefinedstage/') {
+        done(new Error(`Bad endpoint: ${url}`))
+      } else {
+        done()
+      }
+    })
   })
 
 });
