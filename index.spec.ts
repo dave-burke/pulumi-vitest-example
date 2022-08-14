@@ -1,5 +1,5 @@
 import * as pulumi from '@pulumi/pulumi';
-import { describe, it, expect, beforeAll } from 'vitest';
+import "mocha"
 
 pulumi.runtime.setMocks(
   {
@@ -26,15 +26,19 @@ pulumi.runtime.setMocks(
 describe('infrastructure', () => {
   let infra: typeof import('./index');
 
-  beforeAll(async function () {
+  before(async function () {
     // It's important to import the program _after_ the mocks are defined.
     infra = await import('./index');
   });
 
-  it('Creates a DynamoDB table', async () => {
-    const tableId = await new Promise((resolve) => {
-      infra?.dbTable?.id.apply((id) => resolve(id));
-    });
-    expect(tableId).toBe('Table_id');
-  });
+  it("doesn't break anything", (done) => {
+    pulumi.all([infra.endpointUrl]).apply(([url]) => {
+      if(url != 'undefinedstage/') {
+        done(new Error(`Bad endpoint: ${url}`))
+      } else {
+        done()
+      }
+    })
+  })
+
 });
