@@ -13,11 +13,13 @@ const counterTable = new aws.dynamodb.Table("counterTable", {
 });
 
 // Create an API endpoint
+console.log("Creating API")
 const endpoint = new awsx.apigateway.API("hello-world", {
     routes: [{
         path: "/{route+}",
         method: "GET",
         eventHandler: async (event) => {
+            console.log("Executing handler")
             const route = event.pathParameters!["route"];
             console.log(`Getting count for '${route}'`);
 
