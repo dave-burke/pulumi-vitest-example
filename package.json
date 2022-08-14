@@ -2,11 +2,13 @@
     "name": "pulumi-vitest-example",
     "main": "index.ts",
     "scripts": {
-        "test": "vitest run"
+        "test": "mocha -r ts-node/register index.spec.ts"
     },
     "devDependencies": {
+        "@types/mocha": "^9.1.1",
         "@types/node": "^14",
-        "vitest": "^0.21.1"
+        "mocha": "^10.0.0",
+        "ts-node": "^10.9.1"
     },
     "dependencies": {
         "@pulumi/aws": "^5.0.0",

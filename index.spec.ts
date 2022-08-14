@@ -1,5 +1,5 @@
 import * as pulumi from '@pulumi/pulumi';
-import { describe, it, expect, beforeAll } from 'vitest';
+import "mocha"
 
 pulumi.runtime.setMocks(
   {
@@ -26,13 +26,13 @@ pulumi.runtime.setMocks(
 describe('infrastructure', () => {
   let infra: typeof import('./index');
 
-  beforeAll(async function () {
+  before(async function () {
     // It's important to import the program _after_ the mocks are defined.
     infra = await import('./index');
   });
 
-  it("doesn't break math", () => {
-    expect(1).toBe(1);
+  it("doesn't break anything", (done) => {
+    done()
   })
 
 });
