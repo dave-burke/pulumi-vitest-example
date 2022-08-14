@@ -1,94 +1,53 @@
-import * as aws from '@pulumi/aws'
-import * as apigateway from '@pulumi/aws-apigateway'
-import handler from './handler'
+import * as aws from "@pulumi/aws";
+import * as awsx from "@pulumi/awsx";
 
-const table = new aws.dynamodb.Table('Table', {
-  attributes: [
-    {
-      name: 'PK',
-      type: 'S',
-    },
-  ],
-  hashKey: 'PK',
-  billingMode: 'PAY_PER_REQUEST',
-})
+// Create a mapping from 'route' to a count
+const counterTable = new aws.dynamodb.Table("counterTable", {
+    attributes: [{
+        name: "id",
+        type: "S",
+    }],
+    hashKey: "id",
+    readCapacity: 5,
+    writeCapacity: 5,
+});
 
-const tableAccessPolicy = new aws.iam.Policy('DbAccessPolicy', {
-  policy: table.arn.apply((tableArn) => JSON.stringify({
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Sid: 'ListAndDescribe',
-        Effect: 'Allow',
-        Action: [
-          'dynamodb:List*',
-          'dynamodb:DescribeReservedCapacity*',
-          'dynamodb:DescribeLimits',
-          'dynamodb:DescribeTimeToLive',
-        ],
-        Resource: '*',
-      },
-      {
-        Sid: 'SpecificTable',
-        Effect: 'Allow',
-        Action: [
-          'dynamodb:BatchGet*',
-          'dynamodb:DescribeStream',
-          'dynamodb:DescribeTable',
-          'dynamodb:Get*',
-          'dynamodb:Query',
-          'dynamodb:Scan',
-          'dynamodb:BatchWrite*',
-          'dynamodb:Delete*',
-          'dynamodb:Update*',
-          'dynamodb:PutItem',
-        ],
-        Resource: tableArn,
-      },
-    ],
-  })),
-})
+// Create an API endpoint
+console.log("Creating API")
+const endpoint = new awsx.apigateway.API("hello-world", {
+    routes: [{
+        path: "/{route+}",
+        method: "GET",
+        eventHandler: async (event) => {
+            console.log("Executing handler")
+            const route = event.pathParameters!["route"];
+            console.log(`Getting count for '${route}'`);
 
-const lambdaRole = new aws.iam.Role('lambdaRole', {
-  assumeRolePolicy: JSON.stringify({
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Action: 'sts:AssumeRole',
-        Principal: {
-          Service: 'lambda.amazonaws.com',
+            const client = new aws.sdk.DynamoDB.DocumentClient();
+
+            // get previous value and increment
+            // reference outer `counterTable` object
+            const tableData = await client.get({
+                TableName: counterTable.name.get(),
+                Key: { id: route },
+                ConsistentRead: true,
+            }).promise();
+
+            const value = tableData.Item;
+            let count = (value && value.count) || 0;
+
+            await client.put({
+                TableName: counterTable.name.get(),
+                Item: { id: route, count: ++count },
+            }).promise();
+
+            console.log(`Got count ${count} for '${route}'`);
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ route, count }),
+            };
         },
-        Effect: 'Allow',
-        Sid: '',
-      },
-    ],
-  }),
-})
+    }],
+});
 
-new aws.iam.RolePolicyAttachment(
-  'RolePolicyAttachment',
-  {
-    role: lambdaRole,
-    policyArn: tableAccessPolicy.arn,
-  }
-)
-
-const callbackFunction = new aws.lambda.CallbackFunction(
-  'callbackFunction',
-  {
-    role: lambdaRole,
-    callback: handler(table.name),
-  }
-)
-
-const api = new apigateway.RestAPI('api', {
-  routes: [{
-    method: 'GET',
-    path: '/',
-    eventHandler: callbackFunction,
-  }]
-})
-
-export const dbTable = table
-export const url = api.url
-
+exports.endpoint = endpoint.url;
